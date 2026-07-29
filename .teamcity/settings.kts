@@ -7,7 +7,7 @@ import jetbrains.buildServer.configs.kotlin.v2018_1.triggers.finishBuildTrigger
  * TeamCity Kotlin DSL - CONAN third-party project (IN-658 Conan package builds).
  * Target server: TeamCity Enterprise 2018.1.3  =>  API version "2018.1".
  *
- * Three templated package builds: grpc, fmt, gtest. Each is one <PKG>_CONAN subtree
+ * Three templated package builds: grpc, fmt, gtest. Each is one <PKG> subtree
  * (Linux x86_64 / Linux ARM arm+arm64 / Windows x64 + a PUBLISH config). Describe a
  * package ONCE via conanPackage()/grpcLine(); adding a package is one line, bumping a
  * version is one string. Build logic itself lives in the conan-recipes test-astra
@@ -62,7 +62,7 @@ data class ConanPkg(
  *     413 = Linux   x64 DynRT    (ConanBuildLinux x86_64; CMAKE analog 113)
  *     421 = Linux   ARM DynRT    (ConanBuildLinux arm;    CMAKE analog 121)
  *     422 = Linux ARM64 DynRT    (ConanBuildLinux arm64;  CMAKE analog 122)
- *     920 = Conan publish stage  (PublishToProGet; CMAKE PACKAGE is 900) - free in 9xx
+ *     920 = Conan publish stage  (Publish template; CMAKE PACKAGE is 900) - free in 9xx
  *
  * StaticRT is a Windows-only slot (runtime /MT + LEGACY_NUPKG_LINKAGE=static);
  * Linux is DynamicRT-slot only, content always static .a. Numbers live in ONE
@@ -90,8 +90,9 @@ val WIN_VARIANTS = listOf(
 /*
  * Tree shape produced by both factories (matches the TC-generated FMT_CONAN):
  *
- *   <PKG>_CONAN
- *     - PUBLISH <PKG> TO CONAN PROGET        (publish config at package level)
+ *   <PKG>                (display name; subproject ID keeps the _CONAN tail -
+ *                         renaming an ID makes TC recreate the project)
+ *     - <XX>920 PUBLISH                      (publish config at package level)
  *     - Linux        -> <PKG> BUILD Conan x86_64
  *     - Linux ARM    -> <PKG> BUILD Conan arm, arm64
  *     - Windows      -> <PKG> BUILD Conan Windows x64
@@ -118,7 +119,7 @@ fun Project.conanPackage(p: ConanPkg) {
 
     subProject {
         id("${idBase}_CONAN")
-        name = "${p.name.toUpperCase()}_CONAN"
+        name = p.name.toUpperCase()
 
         subProject {
             id("${idBase}_Linux")
@@ -154,7 +155,7 @@ fun Project.conanPackage(p: ConanPkg) {
         buildType {
             id("${idBase}_Publish")
             name = "$code$PUBLISH_CODE PUBLISH"
-            templates(PublishToProGet)
+            templates(Publish)
             buildNumberPattern = "${p.version}-%build.counter%"
             // snapshot + same-chain artifacts: one publish waits for ALL leaves of the
             // same chain and never mixes builds of different generations; a failed or
@@ -219,7 +220,7 @@ fun Project.grpcLine(
 
     subProject {
         id("Grpc_${line}_CONAN")
-        name = "GRPC_${line}_CONAN"
+        name = "GRPC_$line"
 
         subProject {
             id("Grpc_${line}_Linux")
@@ -256,7 +257,7 @@ fun Project.grpcLine(
         buildType {
             id("Grpc_${line}_Publish")
             name = "GR$PUBLISH_CODE PUBLISH"
-            templates(PublishToProGet)
+            templates(Publish)
             buildNumberPattern = "$version-%build.counter%"
             dependencies {
                 leaves.forEach { b ->
@@ -374,9 +375,9 @@ object ConanBuildWindows : Template({
     }
 })
 
-object PublishToProGet : Template({
-    id("PublishToProGet")
-    name = "CONAN 920 PUBLISH TO PROGET"
+object Publish : Template({
+    id("ConanPublish")
+    name = "CONAN 920 PUBLISH"
     description = "Collect leaf .nupkg (via artifact deps) and push to the conan NuGet feed on ProGet"
 
     vcs {
@@ -390,6 +391,9 @@ object PublishToProGet : Template({
             scriptContent = "API_KEY=%ProGet.ApiKey% PROGET_URL=%PROGET_URL% FEED=%FEED% NUPKG_DIR=nupkg bash ./test-astra/tc_publish_conan.sh"
         }
     }
+
+    // keep the exact pushed set downloadable from the publish build itself
+    artifactRules = "nupkg/**/*.nupkg"
 
     // bash publish must land on a Linux build agent (not a Windows one from the same pool)
     requirements {
@@ -407,7 +411,7 @@ project {
 
     template(ConanBuildLinux)
     template(ConanBuildWindows)
-    template(PublishToProGet)
+    template(Publish)
 
     params {
         param("REGISTRY", "proget.inc.elara.local/main")
