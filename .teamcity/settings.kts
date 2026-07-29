@@ -407,8 +407,6 @@ object Publish : Template({
 // Project root - global params + the package list (THIS is what you edit daily)
 // ---------------------------------------------------------------------------
 project {
-    description = "CONAN third-party: grpc / fmt / gtest package builds via Kotlin DSL (IN-658)."
-
     template(ConanBuildLinux)
     template(ConanBuildWindows)
     template(Publish)
