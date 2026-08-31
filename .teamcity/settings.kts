@@ -489,6 +489,11 @@ project {
     // эмитит оба .nupkg — gflags-конфиг опционален.
     conanPackage(ConanPkg("gflags", "2.3.0", code = "GF"))
     conanPackage(ConanPkg("glog", "0.7.1", code = "GL"))
+    // rapidjson: header-only. Апстрим-релиз один и древний (1.1.0, 2016), все
+    // живут на master — CCI версионирует снимки как cci.<дата>. NuGet такую
+    // строку не принимает, поэтому deployer объявляет её как 1.1.20250205
+    // (LEGACY_DEP_VERSION_MAP).
+    conanPackage(ConanPkg("rapidjson", "cci.20250205", code = "RJ"))
     // grpc lines - driver-pinned (7-package stack each); version is display only.
     // Each line is its own GRPC_<line>_CONAN subtree; add a line = add a call.
     grpcLine("1601", "1.60.1")   // parity with legacy GR910
