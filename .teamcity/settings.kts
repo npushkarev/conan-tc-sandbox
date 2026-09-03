@@ -113,7 +113,7 @@ fun Project.conanPackage(p: ConanPkg) {
             param("pkg.version", p.version)
             param("pkg.arch", arch)
             // 32-bit builds run inside the x86_64 mirror image (-m32), no x86 image exists
-            if (arch == "x86") param("docker.image", "%REGISTRY%/grpc-tc-mirror-x86_64:0.1.0")
+            if (arch == "x86") param("docker.image", "%REGISTRY%/library/grpc-tc-mirror-x86_64:0.1.0")
         }
     }.also { leaves.add(it) }
 
@@ -214,7 +214,7 @@ fun Project.grpcLine(
             param("pkg.arch", arch)
             param("pkg.driver", "build_${line}_nodocker.sh")    // override derived
             param("pkg.output", "output-grpc-$line-$arch")      // override derived
-            if (arch == "x86") param("docker.image", "%REGISTRY%/grpc-tc-mirror-x86_64:0.1.0")
+            if (arch == "x86") param("docker.image", "%REGISTRY%/library/grpc-tc-mirror-x86_64:0.1.0")
         }
     }.also { leaves.add(it) }
 
@@ -304,7 +304,7 @@ object ConanBuildLinux : Template({
         param("pkg.name", "")
         param("pkg.version", "")
         param("pkg.arch", "x86_64")   // x86_64 | arm | arm64
-        param("docker.image", "%REGISTRY%/grpc-tc-mirror-%pkg.arch%:0.1.0")
+        param("docker.image", "%REGISTRY%/library/grpc-tc-mirror-%pkg.arch%:0.1.0")
         param("pkg.driver", "build_%pkg.name%_nodocker.sh")
         param("pkg.output", "output-%pkg.name%-%pkg.arch%")
     }
